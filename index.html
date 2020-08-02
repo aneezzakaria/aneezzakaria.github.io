@@ -3,6 +3,222 @@
 <body>
 <h1>Hello World</h1>
 <p>I'm hosted with GitHub Pages.</p>
+<meta charset="utf-8">
+<title>Multi Line Chart</title>
+<script type="text/javascript" src="https://d3js.org/d3.v5.min.js"></script>
+<link rel="stylesheet" type="text/css" href="styles.css">
+<style></style>
+</head>
+<body>
+<div id="container" class="svg-container"></div>
+<script>
+//------------------------1. PREPARATION------------------------//
+//-----------------------------SVG------------------------------//
+const width = 960;
+const height = 500;
+const margin = 5;
+const padding = 5;
+const adj = 30;
+const svg = d3.select("div#container").append("svg")
+    .attr("preserveAspectRatio", "xMinYMin meet")
+    .attr("viewBox", "-"
+          + adj + " -"
+          + adj + " "
+          + (width + adj *3) + " "
+          + (height + adj*3))
+    .style("padding", padding)
+    .style("margin", margin)
+    .classed("svg-content", true);
 
+//-----------------------------DATA-----------------------------//
+const timeConv = d3.timeParse("%d-%b-%Y");
+const dataset = d3.csv("HPI_master.csv");
+dataset.then(function(data1) {
+
+
+    var data= data1.filter(function(d){
+
+        if(d["level"]== "State" && d["period"] == '4'
+            && d["hpi_type"] =="traditional"
+            && d["hpi_flavor"]=="all-transactions"
+            && (d["place_id"] ==  "CA"
+            || d["place_id"] ==  "AZ"
+            || d["place_id"] ==  "TX"
+            || d["place_id"] ==  "FL"
+            || d["place_id"] ==  "NY")
+            //|| d["place_id"] ==  "PA"
+            //|| d["place_id"] ==  "IL"
+            //|| d["place_id"] ==  "OH"
+            //|| d["place_id"] ==  "GA"
+            //|| d["place_id"] ==  "NC"
+            //|| d["place_id"] ==  "MI" )
+            
+            )
+        {   
+            return d;
+        }
+
+        }) 
+        var dataGroup = d3.nest()
+    .key(function(d) {
+        return d.place_name;
+    })
+    .entries(data);
+
+    var slices = dataGroup.map(function(id) {
+        return {
+            id: id.key,
+            values: id.values.map(function(d){
+                return {
+                    date: d.yr,
+                    measurement: d.index_nsa
+                };
+            })
+        };
+    });
+console.log("SLICE",slices)
+var dataGroup1 = dataGroup.map(function(id) {
+        console.log(id.values.map(function(d){
+            console.log(d.yr)
+        }))
+        return; 
+
+
+ });
+    console.log("dataGroup1",dataGroup1)
+
+//----------------------------SCALES----------------------------//
+const xScale = d3.scaleLinear().range([0,width]);
+const yScale = d3.scaleLinear().range([height, 0]);
+xScale.domain(d3.extent(data, function(d){
+    return +d.yr}));
+
+yScale.domain([(0), d3.max(dataGroup, function(c) {
+    return d3.max(c.values, function(d) {
+        return parseInt(d.index_nsa) + 4; });
+        })
+    ]);
+    //yScale.domain([0,900])
+        console.log(
+            d3.max(dataGroup, function(c) {
+    return d3.max(c.values, function(d) {
+        return parseInt(d.index_nsa); });
+        })
+
+        )
+//-----------------------------AXES-----------------------------//
+const yaxis = d3.axisLeft()
+    .ticks((slices[0].values).length)
+    .scale(yScale);
+
+const xaxis = d3.axisBottom()
+    .scale(xScale).ticks(30);
+
+//----------------------------LINES-----------------------------//
+const line = d3.line()
+    .x(function(d) { return xScale(d.date); })
+    .y(function(d) { return yScale(d.measurement); });
+
+//----------------------------COLOR-----------------------------//
+    var res = dataGroup.map(function(d){ return d.key }) // list of group names
+  var color = d3.scaleOrdinal()
+    .domain(res)
+    .range(['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999'])
+
+console.log("REs",res)
+
+const tooltip = d3.select("body").append("div")
+    .attr("class", "tooltip")
+    .style("opacity", 0)
+    .style("position", "absolute");
+
+//-------------------------2. DRAWING---------------------------//
+//-----------------------------AXES-----------------------------//
+svg.append("g")
+    .attr("class", "axis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(xaxis);
+
+svg.append("g")
+    .attr("class", "axis")
+    .call(yaxis)
+    .append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("dy", ".75em")
+    .attr("y", 6)
+    .style("text-anchor", "end")
+    .text("HPI");
+
+//----------------------------LINES-----------------------------//
+const lines = svg.selectAll(".line")
+    .data(slices)
+    .enter()
+    .append("g");
+
+    lines.append("path")
+    //.attr("class", "line")
+    .attr("fill", "none")
+    .attr("stroke", function(d){ return color(d.id) })
+        .attr("stroke-width", 2.5)
+        .attr("d", function(d){return line(d.values); });
+          /*return d3.line()
+            .x(function(d) { return xScale(d.date); })
+            .y(function(d) { return yScale(d.measurement); })
+            (d.values)
+        });*/
+        //.attr("d", function(d) { return line(d.values); });
+
+    lines.append("text")
+    .attr("class","serie-label")
+    .datum(function(d) {
+        return {
+            id: d.id,
+            value: d.values[d.values.length - 2]}; })
+    .attr("transform", function(d) {
+            return "translate(" + (xScale(d.value.date))  
+            + "," + (yScale(d.value.measurement) )+ ")"; })
+    .attr("x", 6)
+    .text(function(d) { return d.id; });
+
+//---------------------------POINTS-----------------------------// 
+lines.selectAll("points")
+    .data(function(d) {return d.values})
+    .enter()
+    .append("circle")
+    .attr("cx", function(d) { return xScale(d.date); })      
+    .attr("cy", function(d) { return yScale(d.measurement); })    
+    .attr("r", 2)
+    .attr("class","point")
+    .style("opacity", 0.1);
+
+//---------------------------EVENTS-----------------------------// 
+
+    lines.selectAll("circles")
+    .data(function(d) { return(d.values); } )
+    .enter()
+    .append("circle")
+    .attr("cx", function(d) { return xScale(d.date); })      
+    .attr("cy", function(d) { return yScale(d.measurement); })    
+    .attr('r', 10)
+    .style("opacity", 0)
+    .on('mouseover', function(d) {
+        tooltip.transition()
+            .delay(30)
+            .duration(200)
+            .style("opacity", 1);
+
+        tooltip.html(d.measurement)
+        .style("left", (d3.event.pageX + 25) + "px")
+        .style("top", (d3.event.pageY) + "px")  
+    })
+
+    .on("mouseout", function(d) {      
+        tooltip.transition()        
+        .duration(100)      
+        .style("opacity", 0);
+    })
+
+});
+</script>
 </body>
 </html>
