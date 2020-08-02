@@ -1,0 +1,56 @@
+/* AXES */
+/* ticks */
+.axis line{
+    stroke: #706f6f;
+    stroke-width: 0.5;
+    shape-rendering: crispEdges;
+    }
+    
+    /* axis contour */
+    .axis path {
+    stroke: #706f6f;
+    stroke-width: 0.7;
+    shape-rendering: crispEdges;
+    }
+    
+    /* axis text */
+    .axis text {
+    fill: #2b2929;
+    font-family: Georgia;
+    font-size: 120%;
+    }
+    
+    /* LINE CHART */
+    .line {
+    fill: none;
+    stroke: green;
+    }
+    
+    .ghost-line {
+    fill: none;
+    stroke: red;
+    opacity: 0;
+    stroke-width: 10;
+    }
+    
+    .serie-label {
+    fill: #f00909;
+    font-family: Georgia;
+    font-size: 100%;
+    }
+    .path {
+        fill: none;
+        stroke: #ed3700;
+        }
+    /* TOOLTIP */
+    .tooltip {
+        fill: #2b2929;
+        font-family: Georgia;
+        font-size: 150%;
+    }
+
+    /* POINTS */
+    .point {
+        stroke: none;
+        fill: #eb0909;
+    }
