@@ -1,19 +1,58 @@
 <!DOCTYPE html>
-<html>
-<body>
-<h1>US Home Price index Chart</h1>
-<p>What Is the House Price Index (HPI)?
-    The House Price Index (HPI) is a broad measure of the movement 
-    of single-family house prices in the United States. Aside from serving as 
-    an indicator of house price trends, it also functions as an analytical tool for estimating changes in the rates of mortgage defaults, prepayments, and housing affordability.
-</p>
+<head>
 <meta charset="utf-8">
 <title>Multi Line Chart</title>
 <script type="text/javascript" src="https://d3js.org/d3.v5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-annotation/1.13.0/d3-annotation.min.js"></script>
 <link rel="stylesheet" type="text/css" href="styles.css">
-<style></style>
+<style>
+         body{
+        background-color: whitesmoke;
+     }
+
+    :root {
+      --accent-color: #E8336D;
+    }
+
+     svg {
+        background-color: white;
+        font-family: 'Lato';
+     }
+
+    .annotation path {
+      stroke: var(--accent-color);
+      fill: none;
+    }
+
+    .annotation path.connector-arrow, 
+    .annotation path.connector-dot, 
+    .title text, .annotation text {
+      fill: var(--accent-color);
+    }
+
+    .annotation-note-bg {
+      fill: rgba(0, 0, 0, 0);
+    }
+
+    .annotation-note-title {
+      font-weight: bold;
+    }
+
+    text.title {
+      font-size: 1.2em;
+      font-weight: bold;
+    }
+
+</style>
 </head>
 <body>
+    <h1>US Home Price index Chart</h1>
+    <p>What Is the House Price Index (HPI)?
+        The House Price Index (HPI) is a broad measure of the movement 
+        of single-family house prices in the United States. Aside from serving as 
+        an indicator of house price trends, it also functions as an analytical tool for estimating changes in the rates of mortgage defaults, prepayments, and housing affordability.
+    </p>
+<text x=100 y=100>Hover over the lines and points to see moreinformation</text>
 <div id="container" class="svg-container"></div>
 <script>
 //------------------------1. PREPARATION------------------------//
@@ -23,7 +62,7 @@ const height = 500;
 const margin = 5;
 const padding = 5;
 const adj = 30;
-const svg = d3.select("div#container").append("svg")
+const svg = d3.select("body").append("svg")
     .attr("preserveAspectRatio", "xMinYMin meet")
     .attr("viewBox", "-"
           + adj + " -"
@@ -130,7 +169,7 @@ const line = d3.line()
     .range(['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999'])
 
 console.log("REs",res)
-
+//---------------------------TOOLTIP----------------------------//
 const tooltip = d3.select("body").append("div")
     .attr("class", "tooltip")
     .style("opacity", 0)
@@ -154,16 +193,16 @@ svg.append("g")
     .text("HPI");
 
 //----------------------------LINES-----------------------------//
-const lines = svg.selectAll(".line")
+const lines = svg.selectAll("lines")
     .data(slices)
     .enter()
     .append("g");
 
     lines.append("path")
-    //.attr("class", "line")
-    .attr("fill", "none")
-    .attr("stroke", function(d){ return color(d.id) })
-        .attr("stroke-width", 2.5)
+    .attr("class", "line")
+    //.attr("fill", "none")
+    //.attr("stroke", function(d){ return color(d.id) })
+        //.attr("stroke-width", 2.5)
         .attr("d", function(d){return line(d.values); });
           /*return d3.line()
             .x(function(d) { return xScale(d.date); })
@@ -173,16 +212,20 @@ const lines = svg.selectAll(".line")
         //.attr("d", function(d) { return line(d.values); });
 
     lines.append("text")
-    .attr("class","serie-label")
+    .attr("class","serie_label")
     .datum(function(d) {
         return {
             id: d.id,
-            value: d.values[d.values.length - 2]}; })
+            value: d.values[d.values.length - 1]}; })
     .attr("transform", function(d) {
-            return "translate(" + (xScale(d.value.date))  
-            + "," + (yScale(d.value.measurement) )+ ")"; })
-    .attr("x", 6)
+            return "translate(" + (xScale(d.value.date) + 10)  
+            + "," + (yScale(d.value.measurement)+5 )+ ")"; })
+    .attr("x", 5)
     .text(function(d) { return d.id; });
+
+    const ghost_lines = lines.append("path")
+    .attr("class", "ghost-line")
+    .attr("d", function(d) { return line(d.values); });  
 
 //---------------------------POINTS-----------------------------// 
 lines.selectAll("points")
@@ -193,11 +236,56 @@ lines.selectAll("points")
     .attr("cy", function(d) { return yScale(d.measurement); })    
     .attr("r", 2)
     .attr("class","point")
-    .style("opacity", 0.1);
+    .style("opacity", .1);
 
-//---------------------------EVENTS-----------------------------// 
 
-    lines.selectAll("circles")
+//---------------------------EVENTS1-----------------------------// 
+
+svg.selectAll(".ghost-line")
+    .on('mouseover', function() {
+        const selection = d3.select(this).raise();
+
+        selection
+            .transition()
+            .delay("100").duration("10")
+            .style("stroke","#ed3700")
+            .style("opacity","1")
+            .style("stroke-width","3");
+
+        // add the legend action
+        const legend = d3.select(this.parentNode)
+                .select(".serie_label");
+
+        legend
+                .transition()
+                .delay("100")
+                .duration("10")
+                .style("fill","#2b2929");
+            })
+
+    .on('mouseout', function() {
+        const selection = d3.select(this)
+        selection
+            .transition()
+            .delay("100")
+            .duration("10")
+            .style("stroke","#d2d2d2")
+            .style("opacity","0")
+            .style("stroke-width","10");
+
+        // add the legend action
+        const legend = d3.select(this.parentNode)
+            .select(".serie_label");
+        legend
+            .transition()
+            .delay("100")
+            .duration("10")
+            .style("fill","#d2d2d2");
+    });
+
+//---------------------------EVENTS2-----------------------------// 
+
+lines.selectAll("circles")
     .data(function(d) { return(d.values); } )
     .enter()
     .append("circle")
@@ -222,7 +310,34 @@ lines.selectAll("points")
         .style("opacity", 0);
     })
 
+
+//---------------------------ANNOTATIONS-----------------------------// 
+const annotations = [
+        {
+          note: {
+            label: "Dip in home price index during recession",
+            title: "2007-2009 Recession",
+           wrap: 150
+          },
+          connector: {
+            end: "",
+            type: "line",
+          },
+          x: 680,
+          y: 70,
+          dy: 337,
+          dx: 150
+        }]
+
+        const makeAnnotations = d3.annotation()
+          .type(d3.annotationLabel)
+          .annotations(annotations)
+
+        d3.select("svg")
+          .append("g")
+          .attr("class", "annotation-group")
+          .call(makeAnnotations)
+
 });
 </script>
 </body>
-</html>
